@@ -42,7 +42,8 @@ def perform_ai_analysis(prompt, input_data):
         # Call the OpenAI API with retry logic
         for attempt in range(3):
             try:
-                response = openai.ChatCompletion.create(
+                
+response = openai.chat.completions.create(
                     model="gpt-4o",
                     messages=[{"role": "user", "content": full_prompt}],
                     temperature=0.7,
@@ -51,11 +52,11 @@ def perform_ai_analysis(prompt, input_data):
                 result = response.choices[0].message["content"].strip()
                 cache[cache_key] = result # Store result in cache
                 return result
-            except openai.error.RateLimitError as e:
-                if attempt < 2:
-                    time.sleep(2 ** (attempt + 1)) # Exponential backoff
-                else:
-                    raise e
+            except Exception as e:
+    if "rate_limit" in str(e).lower() and attempt < 2:
+        time.sleep(2 ** (attempt + 1)) # Exponential backoff
+    else:
+        raise e
 
     except Exception as e:
         # Log the error for monitoring
