@@ -13,8 +13,10 @@ import hashlib
 app = Flask(__name__)
 CORS(app) # Enable CORS for frontend requests
 
-# Redis connection
-redis_conn = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+redis_url = os.getenv("REDIS_URL")
+if not redis_url:
+    raise ValueError("REDIS_URL environment variable is required")
+redis_conn = redis.from_url(redis_url)
 
 # RQ Queue
 q = Queue("ai_analysis", connection=redis_conn)
