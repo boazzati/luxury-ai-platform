@@ -11,8 +11,9 @@ import hashlib
 
 # --- Configuration ---
 app = Flask(__name__)
-CORS(app) # Enable CORS for frontend requests
+CORS(app)
 
+# Redis connection
 redis_url = os.getenv("REDIS_URL")
 if not redis_url:
     raise ValueError("REDIS_URL environment variable is required")
@@ -24,7 +25,7 @@ q = Queue("ai_analysis", connection=redis_conn)
 # OpenAI API Key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Simple in-memory cache for this MVP
+# Simple in-memory cache
 cache = {}
 
 # --- AI Worker Function ---
@@ -36,30 +37,28 @@ def perform_ai_analysis(prompt, input_data):
         if cache_key in cache:
             return cache[cache_key]
 
-        # Construct the prompt for GPT-4o
+        # Construct the prompt
         full_prompt = f"{prompt}\n\nInput: {input_data}"
 
-        # Call the OpenAI API with retry logic
+        # Call OpenAI API with retry logic
         for attempt in range(3):
             try:
-                
-response = openai.chat.completions.create(
-                    model="gpt-4o",
+                response = openai.ChatCompletion.create(
+                    model="gpt-4",  # Using GPT-4 for now, we can change to GPT-5 once confirmed
                     messages=[{"role": "user", "content": full_prompt}],
                     temperature=0.7,
-                    max_tokens=500, # Token optimization
+                    max_tokens=500,
                 )
                 result = response.choices[0].message["content"].strip()
-                cache[cache_key] = result # Store result in cache
+                cache[cache_key] = result
                 return result
             except Exception as e:
-    if "rate_limit" in str(e).lower() and attempt < 2:
-        time.sleep(2 ** (attempt + 1)) # Exponential backoff
-    else:
-        raise e
+                if "rate_limit" in str(e).lower() and attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
+                else:
+                    raise e
 
     except Exception as e:
-        # Log the error for monitoring
         print(f"Error in AI analysis: {e}")
         return {"error": str(e)}
 
@@ -71,7 +70,7 @@ def submit_analysis_job():
     if not data or "prompt" not in data or "input" not in data:
         return jsonify({"error": "Invalid request payload"}), 400
 
-    # Sanitize input (basic example)
+    # Sanitize input
     prompt = str(data["prompt"])
     input_data = str(data["input"])
 
@@ -97,4 +96,3 @@ def get_analysis_result(job_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
