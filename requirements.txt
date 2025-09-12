@@ -3,3 +3,4 @@ Flask-Cors
 redis
 rq
 openai
+gunicorn
