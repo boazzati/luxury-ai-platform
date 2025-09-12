@@ -22,9 +22,6 @@ redis_conn = redis.from_url(redis_url)
 # RQ Queue
 q = Queue("ai_analysis", connection=redis_conn)
 
-# OpenAI API Key
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 # Simple in-memory cache
 cache = {}
 
@@ -42,14 +39,17 @@ def perform_ai_analysis(prompt, input_data):
 
         # Call OpenAI API with retry logic
         for attempt in range(3):
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-4",  # Using GPT-4 for now, we can change to GPT-5 once confirmed
-                    messages=[{"role": "user", "content": full_prompt}],
-                    temperature=0.7,
-                    max_tokens=500,
-                )
-                result = response.choices[0].message["content"].strip()
+            try:from openai import OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+response = client.chat.completions.create(
+    model="gpt-4",  # Change to "gpt-5" if you prefer
+    messages=[{"role": "user", "content": full_prompt}],
+    temperature=0.7,
+    max_tokens=500,
+)
+result = response.choices[0].message.content.strip()
+
                 cache[cache_key] = result
                 return result
             except Exception as e:
