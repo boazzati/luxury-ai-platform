@@ -5,7 +5,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from rq import Queue
 from rq.job import Job
-import openai
 import time
 import hashlib
 
@@ -39,17 +38,17 @@ def perform_ai_analysis(prompt, input_data):
 
         # Call OpenAI API with retry logic
         for attempt in range(3):
-            try:from openai import OpenAI
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-response = client.chat.completions.create(
-    model="gpt-4",  # Change to "gpt-5" if you prefer
-    messages=[{"role": "user", "content": full_prompt}],
-    temperature=0.7,
-    max_tokens=500,
-)
-result = response.choices[0].message.content.strip()
-
+            try:
+                from openai import OpenAI
+                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+                
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": full_prompt}],
+                    temperature=0.7,
+                    max_tokens=500,
+                )
+                result = response.choices[0].message.content.strip()
                 cache[cache_key] = result
                 return result
             except Exception as e:
@@ -96,3 +95,4 @@ def get_analysis_result(job_id):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
